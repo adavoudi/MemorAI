@@ -1,14 +1,18 @@
 "use client";
 
-import { Flex, Button, Heading } from "@aws-amplify/ui-react";
+import { Flex, Button } from "@aws-amplify/ui-react";
 
 export type FeedbackLevel = "Again" | "Hard" | "Good" | "Easy";
 
 interface SrsFeedbackProps {
   onFeedbackSubmit: (feedback: FeedbackLevel) => void;
+  currentSelection?: FeedbackLevel; // Optional prop for visual feedback
 }
 
-export default function SrsFeedback({ onFeedbackSubmit }: SrsFeedbackProps) {
+export default function SrsFeedback({
+  onFeedbackSubmit,
+  currentSelection,
+}: SrsFeedbackProps) {
   const feedbackOptions: {
     level: FeedbackLevel;
     variation: "destructive" | "warning" | "primary" | "success";
@@ -20,19 +24,21 @@ export default function SrsFeedback({ onFeedbackSubmit }: SrsFeedbackProps) {
   ];
 
   return (
-    <Flex direction="column" alignItems="center" gap="medium">
-      <Heading level={4}>How well did you remember?</Heading>
-      <Flex gap="medium">
-        {feedbackOptions.map(({ level, variation }) => (
-          <Button
-            key={level}
-            // variation={variation}
-            onClick={() => onFeedbackSubmit(level)}
-          >
-            {level}
-          </Button>
-        ))}
-      </Flex>
+    <Flex gap="medium" justifyContent="center">
+      {feedbackOptions.map(({ level, variation }) => (
+        <Button
+          key={level}
+          // Use 'menu' variation for selected, or keep its original color
+          // variation={currentSelection === level ? 'menu' : variation}
+          // You could also manage opacity or borders for a different effect
+          style={{
+            opacity: currentSelection && currentSelection !== level ? 0.5 : 1,
+          }}
+          onClick={() => onFeedbackSubmit(level)}
+        >
+          {level}
+        </Button>
+      ))}
     </Flex>
   );
 }

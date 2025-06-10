@@ -25,16 +25,10 @@ export default function SearchBar({ initialQuery = "" }: SearchBarProps) {
   };
 
   return (
-    <Flex
-      as="form"
-      onSubmit={handleSearch}
-      gap="small"
-      width="100%"
-      maxWidth="600px"
-    >
+    <Flex as="form" onSubmit={handleSearch} gap="small" width="100%">
       <TextField
         label="Search Phrase"
-        // hideLabel
+        labelHidden
         placeholder="Enter an English phrase to translate..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}

@@ -1,61 +1,53 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import {
-  Flex,
-  Button,
-  Icon,
-  SliderField,
-  Text,
-  View,
-} from "@aws-amplify/ui-react";
+import { Flex, Button, Icon, SliderField, View } from "@aws-amplify/ui-react";
 import { MdPlayArrow, MdPause, MdReplay10, MdForward10 } from "react-icons/md";
-
-// In a real app, this would come from your API with timings
-interface Subtitle {
-  text: string;
-  start: number; // in seconds
-  end: number;
-}
 
 interface AudioPlayerProps {
   audioSrc: string;
-  subtitles: Subtitle[];
+  // Callback to report the current time to the parent page
+  onTimeUpdate: (time: number) => void;
+  // Callback to report when the audio has finished playing
+  onEnded: () => void;
 }
 
-export default function AudioPlayer({ audioSrc, subtitles }: AudioPlayerProps) {
+export default function AudioPlayer({
+  audioSrc,
+  onTimeUpdate,
+  onEnded,
+}: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [activeSubtitle, setActiveSubtitle] = useState("");
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const setAudioData = () => {
-      setDuration(audio.duration);
-      setCurrentTime(audio.currentTime);
-    };
-
-    const setAudioTime = () => {
+    const handleLoadedData = () => setDuration(audio.duration);
+    const handleTimeUpdate = () => {
       const newTime = audio.currentTime;
       setCurrentTime(newTime);
-      const currentSubtitle = subtitles.find(
-        (s) => newTime >= s.start && newTime <= s.end
-      );
-      setActiveSubtitle(currentSubtitle ? currentSubtitle.text : "");
+      onTimeUpdate(newTime); // Report time up to the parent
+    };
+    const handleEnded = () => {
+      setIsPlaying(false);
+      onEnded(); // Report that playback finished
     };
 
-    audio.addEventListener("loadeddata", setAudioData);
-    audio.addEventListener("timeupdate", setAudioTime);
+    audio.addEventListener("loadeddata", handleLoadedData);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
 
+    // Cleanup listeners
     return () => {
-      audio.removeEventListener("loadeddata", setAudioData);
-      audio.removeEventListener("timeupdate", setAudioTime);
+      audio.removeEventListener("loadeddata", handleLoadedData);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
     };
-  }, [subtitles]);
+  }, [onTimeUpdate, onEnded]);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
@@ -70,7 +62,17 @@ export default function AudioPlayer({ audioSrc, subtitles }: AudioPlayerProps) {
 
   const seek = (amount: number) => {
     if (audioRef.current) {
-      audioRef.current.currentTime += amount;
+      audioRef.current.currentTime = Math.max(
+        0,
+        audioRef.current.currentTime + amount
+      );
+    }
+  };
+
+  const handleSliderChange = (value: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = value;
+      setCurrentTime(value);
     }
   };
 
@@ -82,28 +84,17 @@ export default function AudioPlayer({ audioSrc, subtitles }: AudioPlayerProps) {
       left="0"
       padding="medium"
       backgroundColor="background.secondary"
+      boxShadow="medium"
     >
-      <Flex direction="column" alignItems="center" gap="large">
-        {/* Subtitle Display */}
-        <Text fontSize="xxl" fontWeight="bold" minHeight="3rem">
-          {activeSubtitle}
-        </Text>
-
-        {/* Player Controls */}
-        <audio
-          ref={audioRef}
-          src={audioSrc}
-          onEnded={() => setIsPlaying(false)}
-        />
+      <Flex direction="column" alignItems="center" gap="small">
+        <audio ref={audioRef} src={audioSrc} />
         <SliderField
           label="Progress"
-          // hideLabel
+          labelHidden
           min={0}
-          max={duration}
+          max={isNaN(duration) ? 0 : duration}
           value={currentTime}
-          onChange={(value) => {
-            if (audioRef.current) audioRef.current.currentTime = value;
-          }}
+          onChange={handleSliderChange}
           width="80%"
         />
         <Flex alignItems="center" gap="large">

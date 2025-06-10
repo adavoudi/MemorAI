@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Heading, Flex, Collection, Text } from "@aws-amplify/ui-react";
 import Flashcard, { FlashcardData } from "@/components/deck/Flashcard";
 import EditCardModal from "@/components/deck/EditCardModal";
+import "@/hooks/auth";
 
 const mockFlashcards: FlashcardData[] = [
   { id: "c1", front: "Good morning", back: "Guten Morgen" },

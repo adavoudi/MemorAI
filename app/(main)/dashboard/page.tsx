@@ -5,6 +5,7 @@ import { Heading, Flex } from "@aws-amplify/ui-react";
 import StatsCard from "@/components/dashboard/StatsCard";
 import ProgressChart from "@/components/dashboard/ProgressChart";
 import { FaBook, FaFire, FaCheckCircle } from "react-icons/fa";
+import "@/hooks/auth";
 
 export default function DashboardPage() {
   const { user } = useAuthenticator();
