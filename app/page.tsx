@@ -15,6 +15,7 @@ import {
   Text,
   Loader,
 } from "@aws-amplify/ui-react";
+import "@/hooks/auth";
 
 const client = generateClient<Schema>();
 

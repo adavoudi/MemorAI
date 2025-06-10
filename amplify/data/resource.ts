@@ -50,6 +50,18 @@ const schema = a
       link: a.url(),
       // Also linked to the user via the implicit 'owner' field.
     }),
+    DailyStats: a
+      .model({
+        date: a.date().required(),
+        owner: a.string().required(),
+        reviewsCompleted: a.integer().required().default(0),
+        cardsAdded: a.integer().required().default(0),
+        feedbackAgain: a.integer().required().default(0),
+        feedbackHard: a.integer().required().default(0),
+        feedbackGood: a.integer().required().default(0),
+        feedbackEasy: a.integer().required().default(0),
+      })
+      .identifier(["owner", "date"]),
   })
   .authorization((allow) => [
     allow.owner().to(["create", "read", "update", "delete"]),
