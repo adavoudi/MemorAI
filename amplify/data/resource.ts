@@ -2,6 +2,16 @@ import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
 const schema = a
   .schema({
+    User: a
+      .model({
+        owner: a.string().required(),
+        firstName: a.string().required(),
+        lastName: a.string().required(),
+        sourceLanguage: a.enum(["English"]),
+        targetLanguage: a.enum(["German"]),
+      })
+      .identifier(["owner"]),
+
     Deck: a.model({
       name: a.string().required(),
       cards: a.hasMany("Card", "deckId"),
@@ -24,7 +34,6 @@ const schema = a
       .secondaryIndexes((index) => [index("deckId").sortKeys(["srsDueDate"])]),
 
     ReviewFile: a.model({
-      // They are null when the record is first created and updated upon job completion.
       s3Path: a.string(),
       subtitleS3Path: a.string(),
       cardCount: a.integer().required(),
@@ -39,6 +48,7 @@ const schema = a
       message: a.string().required(),
       isRead: a.boolean().required().default(false),
       link: a.url(),
+      // Also linked to the user via the implicit 'owner' field.
     }),
   })
   .authorization((allow) => [

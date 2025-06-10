@@ -1,14 +1,21 @@
 "use client";
 
-import { Flex } from "@aws-amplify/ui-react";
+import { Flex, Loader } from "@aws-amplify/ui-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { useProfileCheck } from "@/hooks/useProfileCheck";
 
-export default function MainAppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function ProtectedPages({ children }: { children: React.ReactNode }) {
+  const { isChecking } = useProfileCheck();
+
+  if (isChecking) {
+    return (
+      <Flex justifyContent="center" alignItems="center" minHeight="100vh">
+        <Loader size="large" />
+      </Flex>
+    );
+  }
+
   return (
     <Flex direction="column" minHeight="100vh">
       <Header />
@@ -26,4 +33,12 @@ export default function MainAppLayout({
       <Footer />
     </Flex>
   );
+}
+
+export default function MainAppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <ProtectedPages>{children}</ProtectedPages>;
 }
