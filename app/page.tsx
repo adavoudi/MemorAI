@@ -68,14 +68,16 @@ export default function OnboardingPage() {
     setError("");
 
     try {
-      await client.models.User.create({
+      const out = await client.models.User.create({
         owner: user.userId,
         firstName: formData.firstName,
         lastName: formData.lastName,
         sourceLanguage: "English",
         targetLanguage: "German",
       });
-      await client.models.Deck.create({ name: "Default Deck" });
+      console.log("Created user:", out);
+      const mock_out = await client.queries.createMockData();
+      console.log("Mock data created:", mock_out);
       router.replace("/dashboard");
     } catch (err) {
       console.error("Error saving profile:", err);

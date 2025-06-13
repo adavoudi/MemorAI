@@ -16,54 +16,89 @@ import {
 } from "@aws-amplify/ui-react";
 import { FaUserCircle, FaBell } from "react-icons/fa";
 import { useAuthenticator } from "@aws-amplify/ui-react";
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource"; // Adjust path if needed
 
-// --- New Notification Feature ---
-interface Notification {
-  id: string;
-  message: string;
-  isRead: boolean;
-  link?: string;
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: "n1",
-    message: 'Your review file for "Business Travel" is ready.',
-    isRead: false,
-    link: "/review",
-  },
-  {
-    id: "n2",
-    message: 'You have 15 cards due in "Restaurant Phrases".',
-    isRead: true,
-    link: "/review",
-  },
-];
-// --- End Notification Feature ---
+// Initialize the Amplify Data client
+const client = generateClient<Schema>();
+// Define the type for a single notification based on your schema
+type Notification = Schema["Notification"]["type"];
 
 export default function Header() {
   const { tokens } = useTheme();
   const { user, signOut } = useAuthenticator((context) => [context.user]);
 
-  // --- Notification State ---
+  // --- Live Notification State ---
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
-    // In a real app, you would fetch notifications from an API
-    // and potentially use WebSockets for real-time updates.
-    setNotifications(mockNotifications);
-  }, []);
+    // Don't run fetch or subscriptions if there's no authenticated user
+    if (!user) return;
 
-  const handleMarkAsRead = (notificationId: string) => {
-    setNotifications(
-      notifications.map((n) =>
-        n.id === notificationId ? { ...n, isRead: true } : n
-      )
-    );
-    // API call would go here: await markNotificationAsRead(notificationId);
+    // 1. Fetch initial notifications for the user
+    const fetchInitialNotifications = async () => {
+      // The `owner` field is implicitly used for authorization but can be used for filtering in a `list` query.
+      const { data } = await client.models.Notification.list({
+        filter: { owner: { eq: user.userId } },
+      });
+      // Sort by creation date to show newest first
+      data.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setNotifications(data);
+    };
+
+    fetchInitialNotifications();
+
+    // 2. Subscribe to NEW notifications.
+    // FIX: Removed the explicit `filter` property. Amplify automatically scopes owner-based
+    // subscriptions to the currently authenticated user.
+    const createSub = client.models.Notification.onCreate().subscribe({
+      next: (newNotification) => {
+        // Add the new notification to the top of the list
+        setNotifications((prevNotifications) => [
+          newNotification,
+          ...prevNotifications,
+        ]);
+      },
+      error: (error) => console.warn(error),
+    });
+
+    // 3. Subscribe to UPDATES on notifications.
+    // FIX: Removed the explicit `filter` property here as well.
+    const updateSub = client.models.Notification.onUpdate().subscribe({
+      next: (updatedNotification) => {
+        // Replace the old notification with the updated one in the list
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === updatedNotification.id ? updatedNotification : n
+          )
+        );
+      },
+      error: (error) => console.warn(error),
+    });
+
+    // 4. Cleanup function to unsubscribe when the component unmounts or the user changes
+    return () => {
+      createSub.unsubscribe();
+      updateSub.unsubscribe();
+    };
+  }, [user]); // Rerun this effect if the user changes
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    const notification = notifications.find((n) => n.id === notificationId);
+    // Only update if it's currently unread to avoid unnecessary API calls
+    if (notification && !notification.isRead) {
+      await client.models.Notification.update({
+        id: notificationId,
+        isRead: true,
+      });
+      // The UI will update automatically via the onUpdate subscription
+    }
   };
-  // --- End Notification State ---
+  // --- End Live Notification Logic ---
 
   const navLinks = [
     { href: "/search", label: "Search" },
@@ -77,7 +112,6 @@ export default function Header() {
       as="header"
       width="100%"
       padding={`0 ${tokens.space.medium}`}
-      // boxShadow={tokens.shadows.small}
       backgroundColor={tokens.colors.background.secondary}
     >
       <Flex
@@ -88,7 +122,7 @@ export default function Header() {
         maxWidth="1280px"
         margin="0 auto"
       >
-        <Link href="/" passHref style={{ textDecoration: "none" }}>
+        <Link href="/dashboard" passHref style={{ textDecoration: "none" }}>
           <Heading level={3} color={tokens.colors.font.primary}>
             MemorAI
           </Heading>
@@ -100,11 +134,7 @@ export default function Header() {
               <Link
                 href={link.href}
                 passHref
-                style={{
-                  textDecoration: "none",
-                  // color: tokens.colors.font.secondary,
-                  // fontWeight: tokens.fontWeights.bold,
-                }}
+                style={{ textDecoration: "none" }}
               >
                 {link.label}
               </Link>
@@ -112,17 +142,15 @@ export default function Header() {
           ))}
         </Flex>
 
-        {/* --- Updated Right-side Menu --- */}
         {user && (
           <Flex alignItems="center" gap="medium">
-            {/* Notification Bell Menu */}
             <Menu
               trigger={
                 <Button variation="link" size="large" position="relative">
-                  <FaBell />
+                  <FaBell aria-label="Notifications" />
                   {unreadCount > 0 && (
                     <Badge
-                      variation="info"
+                      variation="error"
                       position="absolute"
                       size="small"
                       top="0"
@@ -151,7 +179,6 @@ export default function Header() {
 
             <Divider orientation="vertical" />
 
-            {/* User Profile Menu */}
             <Menu
               trigger={
                 <Button variation="link" size="large">

@@ -14,7 +14,6 @@ import SearchBar from "@/components/search/SearchBar";
 import TranslationItem, {
   Translation,
 } from "@/components/search/TranslationItem";
-import { Deck } from "@/components/deck/DeckList"; // Re-using type from another component
 import "@/hooks/auth";
 
 // --- Mock Data for Decks ---

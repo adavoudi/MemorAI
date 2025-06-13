@@ -30,12 +30,16 @@ export function useProfileCheck() {
     const checkProfile = async () => {
       if (!user?.userId) return;
 
+      console.log("Checking profile for user:", user.userId);
+      console.log(await client.models.User.list());
+
       const { data: userProfile } = await client.models.User.get({
         owner: user.userId,
       });
 
       if (!userProfile) {
         // NO profile exists. Force the user back to the root page to complete onboarding.
+        console.log("No profile found. Redirecting to root page.");
         router.replace("/");
       } else {
         // Profile exists, user can proceed.

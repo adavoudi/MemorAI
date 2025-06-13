@@ -11,7 +11,10 @@ import {
   Divider,
 } from "@aws-amplify/ui-react";
 import { MdDelete, MdArrowForward } from "react-icons/md";
-import { Deck } from "./DeckList"; // Re-using the type
+import type { Schema } from "@/amplify/data/resource"; // Import the schema type
+
+// Define the Deck type based on the schema for props
+type Deck = Schema["Deck"]["type"];
 
 interface DeckCardProps {
   deck: Deck;
@@ -19,12 +22,23 @@ interface DeckCardProps {
 }
 
 export default function DeckCard({ deck, onDelete }: DeckCardProps) {
+  // Format the creation date for display
+  const createdAtDate = new Date(deck.createdAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <Card variation="elevated" width={{ base: "100%", large: "350px" }}>
       <Flex direction="column" gap="small">
         <Heading level={4}>{deck.name}</Heading>
-        <Text color="font.secondary">{deck.cardCount} cards</Text>
-        <Divider />
+        {/* The live Deck model doesn't have a direct 'cardCount'.
+            Instead, we can show other useful info like the creation date. */}
+        <Text color="font.secondary" fontSize="small">
+          Created on {createdAtDate}
+        </Text>
+        <Divider marginBlock="small" />
         <Flex justifyContent="space-between" alignItems="center">
           <Link href={`/deck/${deck.id}`} passHref legacyBehavior>
             <Button variation="primary">
@@ -32,7 +46,11 @@ export default function DeckCard({ deck, onDelete }: DeckCardProps) {
               <Icon as={MdArrowForward} />
             </Button>
           </Link>
-          <Button variation="destructive" onClick={() => onDelete(deck.id)}>
+          <Button
+            variation="destructive"
+            onClick={() => onDelete(deck.id)}
+            aria-label={`Delete deck ${deck.name}`}
+          >
             <Icon as={MdDelete} />
           </Button>
         </Flex>

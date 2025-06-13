@@ -10,13 +10,21 @@ import {
   Heading,
   useTheme,
 } from "@aws-amplify/ui-react";
-import { FlashcardData } from "./Flashcard";
+import type { Schema } from "@/amplify/data/resource";
+
+// Define the Card type from the generated schema
+type CardData = Schema["Card"]["type"];
 
 interface EditCardModalProps {
-  card: FlashcardData | null;
+  card: CardData | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedCard: FlashcardData) => void;
+  // This signature matches what DeckDetailPage expects
+  onSave: (updatedCard: {
+    cardId: string;
+    frontText: string;
+    backText: string;
+  }) => void;
 }
 
 export default function EditCardModal({
@@ -31,55 +39,66 @@ export default function EditCardModal({
 
   useEffect(() => {
     if (card) {
-      setFrontText(card.front);
-      setBackText(card.back);
+      // Use the correct properties 'frontText' and 'backText'
+      setFrontText(card.frontText);
+      setBackText(card.backText);
     }
   }, [card]);
 
   const handleSave = () => {
     if (!card) return;
-    // Fictional API call: await updateCard(card.id, { front: frontText, back: backText });
-    onSave({ ...card, front: frontText, back: backText });
+    // Pass back an object with the required shape for the update operation
+    onSave({
+      cardId: card.cardId,
+      frontText: frontText,
+      backText: backText,
+    });
     onClose();
   };
 
-  // Prevent the modal from closing when its content is clicked.
-  const stopPropagation = (e: MouseEvent) => {
-    e.stopPropagation();
-  };
+  const stopPropagation = (e: MouseEvent) => e.stopPropagation();
 
   if (!isOpen || !card) {
     return null;
   }
 
   return (
-    // 1. The Overlay: A full-screen View that closes the modal when clicked.
+    // The Overlay
     <View
       position="fixed"
       top="0"
       left="0"
       right="0"
       bottom="0"
-      backgroundColor={tokens.colors.overlay["50"]} // Semi-transparent background
+      backgroundColor={tokens.colors.overlay["50"]}
       onClick={onClose}
       display="flex"
       // justifyContent="center"
       // alignItems="center"
-      // zIndex={100} // Ensure it's on top of other content
+      // zIndex={100}
     >
-      {/* 2. The Modal Content: A Card that stops click propagation. */}
+      {/* The Modal Content */}
       <Card
         variation="elevated"
         width={{ base: "90%", medium: "600px" }}
         padding={tokens.space.large}
         onClick={stopPropagation}
       >
-        <Flex direction="column" gap="medium">
+        <Flex
+          as="form"
+          direction="column"
+          gap="medium"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
           <Heading level={4}>Edit Flashcard</Heading>
           <TextField
             label="Front (English)"
             value={frontText}
             onChange={(e) => setFrontText(e.target.value)}
+            autoFocus
           />
           <TextField
             label="Back (German)"
@@ -87,10 +106,8 @@ export default function EditCardModal({
             onChange={(e) => setBackText(e.target.value)}
           />
           <Flex justifyContent="flex-end" gap="small" marginTop="medium">
-            <Button variation="primary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button variation="primary" onClick={handleSave}>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button variation="primary" type="submit">
               Save Changes
             </Button>
           </Flex>
