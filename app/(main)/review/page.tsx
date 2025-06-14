@@ -1,7 +1,6 @@
-// app/(main)/review/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Button,
   Flex,
@@ -14,158 +13,176 @@ import {
   ToggleButtonGroup,
   SelectField,
   Divider,
+  Loader,
 } from "@aws-amplify/ui-react";
 import ReviewFileItem from "@/components/review/ReviewFileItem";
+import { useAuthenticator } from "@aws-amplify/ui-react";
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource";
 import "@/hooks/auth";
 
-// --- Updated Data Structures ---
-interface DeckWithDueCount {
-  id: string;
-  name: string;
+// Initialize Amplify Client
+const client = generateClient<Schema>();
+
+// Define types from schema
+type Deck = Schema["Deck"]["type"];
+type ReviewFile = Schema["ReviewFile"]["type"];
+
+// Enhanced type for the UI
+interface DeckWithDueCount extends Deck {
   dueCardCount: number;
 }
 
-// The ReviewFile type is now enhanced with more properties for filtering
-export interface ReviewFile {
-  id: string;
-  deckId: string;
-  deckName: string;
-  isListened: boolean;
-  phrases: string[];
-  cardCount: number;
-  createdAt: string;
-}
-
-const mockDecksWithDue: DeckWithDueCount[] = [
-  { id: "d1", name: "Default Deck", dueCardCount: 5 },
-  { id: "d2", name: "Business Travel", dueCardCount: 12 },
-  { id: "d3", name: "Restaurant Phrases", dueCardCount: 0 },
-];
-
-const mockRecentFiles: ReviewFile[] = [
-  {
-    id: "rf1",
-    deckId: "d2",
-    deckName: "Business Travel",
-    isListened: false,
-    phrases: ["Good morning", "Thank you"],
-    cardCount: 7,
-    createdAt: "2025-06-10T10:00:00Z",
-  },
-  {
-    id: "rf2",
-    deckId: "d1",
-    deckName: "Default Deck",
-    isListened: true,
-    phrases: ["Where is the station?", "A ticket, please."],
-    cardCount: 8,
-    createdAt: "2025-06-09T11:30:00Z",
-  },
-  {
-    id: "rf3",
-    deckId: "d2",
-    deckName: "Business Travel",
-    isListened: true,
-    phrases: ["The meeting is at 2 PM.", "Can you help me?"],
-    cardCount: 10,
-    createdAt: "2025-06-07T15:00:00Z",
-  },
-  {
-    id: "rf4",
-    deckId: "d1",
-    deckName: "Default Deck",
-    isListened: false,
-    phrases: ["Hello", "Goodbye"],
-    cardCount: 5,
-    createdAt: "2025-06-10T14:20:00Z",
-  },
-];
-// --- End Updated Data ---
-
 export default function ReviewPage() {
-  // --- State for Filters ---
+  const { user } = useAuthenticator((context) => [context.user]);
+
+  // State for data
+  const [decksWithDue, setDecksWithDue] = useState<DeckWithDueCount[]>([]);
+  const [reviewFiles, setReviewFiles] = useState<ReviewFile[]>([]);
+
+  // State for UI and filters
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState<Map<string, boolean>>(
+    new Map()
+  );
   const [statusFilter, setStatusFilter] = useState<
     "all" | "listened" | "notListened"
   >("all");
-  const [deckFilter, setDeckFilter] = useState<string>("all"); // 'all' or a deckId
+  const [deckFilter, setDeckFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
 
-  const handleGenerateForDeck = (deckId: string, deckName: string) => {
-    console.log(`Generating review files for deck ${deckId}...`);
-    alert(
-      `Generation started for "${deckName}"! You'll get a notification when it's ready.`
-    );
+  // Effect to fetch initial deck and card data to calculate due counts
+  useEffect(() => {
+    if (!user) return;
+    setIsLoading(true);
+
+    const fetchDecksAndDueCounts = async () => {
+      // Fetch all decks and all cards for the user concurrently
+      const [decksResult, cardsResult] = await Promise.all([
+        client.models.Deck.list({ filter: { owner: { eq: user.userId } } }),
+        client.models.Card.list({ filter: { owner: { eq: user.userId } } }),
+      ]);
+
+      const decks = decksResult.data;
+      const cards = cardsResult.data;
+      const today = new Date().toISOString().split("T")[0];
+
+      // Create a map to efficiently store due counts
+      const dueCountMap = new Map<string, number>();
+      for (const card of cards) {
+        if (card.srsDueDate <= today) {
+          dueCountMap.set(card.deckId, (dueCountMap.get(card.deckId) || 0) + 1);
+        }
+      }
+
+      // Combine deck info with its calculated due count
+      const decksWithCountData = decks.map((deck) => ({
+        ...deck,
+        dueCardCount: dueCountMap.get(deck.id) || 0,
+      }));
+
+      setDecksWithDue(decksWithCountData);
+      setIsLoading(false);
+    };
+
+    fetchDecksAndDueCounts();
+  }, [user]);
+
+  // Effect to get a real-time list of review files
+  useEffect(() => {
+    if (!user) return;
+    const sub = client.models.ReviewFile.observeQuery({
+      filter: { owner: { eq: user.userId } },
+    }).subscribe({
+      next: ({ items }) => {
+        setReviewFiles(items);
+      },
+      error: (error) => console.warn(error),
+    });
+
+    return () => sub.unsubscribe();
+  }, [user]);
+
+  const handleGenerateForDeck = async (deckId: string, deckName: string) => {
+    setIsGenerating((prev) => new Map(prev).set(deckId, true));
+    try {
+      // In a real app, you would call a custom mutation that triggers a Lambda function
+      // For now, we'll simulate the call and show a notification hint.
+      console.log(`Triggering review file generation for deck: ${deckName}`);
+      alert(
+        `Generation started for "${deckName}"! You'll get a notification in the header when it's ready.`
+      );
+
+      // Fictional mutation call:
+      // await client.mutations.generateReviewFile({ deckId });
+    } catch (error) {
+      console.error("Error generating review file:", error);
+    }
+    setIsGenerating((prev) => new Map(prev).set(deckId, false));
   };
 
-  // --- Filtering & Sorting Logic ---
+  // Filtering and sorting logic for the review history
   const filteredFiles = useMemo(() => {
-    let files = [...mockRecentFiles];
-
-    // 1. Filter by listened status
-    if (statusFilter === "listened") {
-      files = files.filter((file) => file.isListened);
-    } else if (statusFilter === "notListened") {
-      files = files.filter((file) => !file.isListened);
-    }
-
-    // 2. Filter by deck
-    if (deckFilter !== "all") {
-      files = files.filter((file) => file.deckId === deckFilter);
-    }
-
-    // 3. Sort by date
+    let files = [...reviewFiles];
+    if (statusFilter === "listened") files = files.filter((f) => f.isListened);
+    if (statusFilter === "notListened")
+      files = files.filter((f) => !f.isListened);
+    if (deckFilter !== "all")
+      files = files.filter((f) => f.deckId === deckFilter);
     files.sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
       return sortBy === "newest" ? dateB - dateA : dateA - dateB;
     });
-
     return files;
-  }, [statusFilter, deckFilter, sortBy]); // Recalculate only when filters change
+  }, [reviewFiles, statusFilter, deckFilter, sortBy]);
 
   return (
     <Flex direction="column" gap="xlarge">
-      {/* Section 1: Generate new reviews (remains the same) */}
       <Flex direction="column" gap="large">
         <Heading level={2}>Generate Reviews</Heading>
         <Text>
           Select a deck to generate a new audio review file from its due cards.
         </Text>
-        <Collection type="list" items={mockDecksWithDue} gap="medium">
-          {(deck, index) => (
-            <Card key={index} variation="outlined" padding="large">
-              <Flex justifyContent="space-between" alignItems="center">
-                <Flex direction="column">
-                  <Heading level={4}>{deck.name}</Heading>
-                  <Text color="font.secondary">
-                    <Badge
-                      variation={deck.dueCardCount > 0 ? "warning" : "info"}
-                    >
-                      {deck.dueCardCount}
-                    </Badge>{" "}
-                    cards due
-                  </Text>
+        {isLoading ? (
+          <Loader size="large" />
+        ) : (
+          <Collection type="list" items={decksWithDue} gap="medium">
+            {(deck) => (
+              <Card key={deck.id} variation="outlined" padding="large">
+                <Flex justifyContent="space-between" alignItems="center">
+                  <Flex direction="column">
+                    <Heading level={4}>{deck.name}</Heading>
+                    <Text color="font.secondary">
+                      <Badge
+                        variation={deck.dueCardCount > 0 ? "warning" : "info"}
+                      >
+                        {deck.dueCardCount}
+                      </Badge>{" "}
+                      cards due
+                    </Text>
+                  </Flex>
+                  <Button
+                    variation="primary"
+                    onClick={() => handleGenerateForDeck(deck.id, deck.name)}
+                    isDisabled={
+                      deck.dueCardCount === 0 || isGenerating.get(deck.id)
+                    }
+                    isLoading={isGenerating.get(deck.id)}
+                  >
+                    Generate
+                  </Button>
                 </Flex>
-                <Button
-                  variation="primary"
-                  onClick={() => handleGenerateForDeck(deck.id, deck.name)}
-                  isDisabled={deck.dueCardCount === 0}
-                >
-                  Generate
-                </Button>
-              </Flex>
-            </Card>
-          )}
-        </Collection>
+              </Card>
+            )}
+          </Collection>
+        )}
       </Flex>
 
       <Divider size="large" />
 
-      {/* Section 2: Recently Generated Files with Filters */}
       <Flex direction="column" gap="large">
         <Heading level={3}>Review History</Heading>
-
-        {/* --- New Filter UI Controls --- */}
         <Card variation="outlined">
           <Flex
             direction={{ base: "column", medium: "row" }}
@@ -188,7 +205,7 @@ export default function ReviewPage() {
               onChange={(e) => setDeckFilter(e.target.value)}
             >
               <option value="all">All Decks</option>
-              {mockDecksWithDue.map((deck) => (
+              {decksWithDue.map((deck) => (
                 <option key={deck.id} value={deck.id}>
                   {deck.name}
                 </option>
@@ -205,11 +222,16 @@ export default function ReviewPage() {
             </SelectField>
           </Flex>
         </Card>
-        {/* --- End Filter UI --- */}
 
         {filteredFiles.length > 0 ? (
           <Collection type="list" items={filteredFiles} gap="medium">
-            {(item, index) => <ReviewFileItem key={index} file={item} />}
+            {(item) => (
+              <ReviewFileItem
+                key={item.id}
+                file={item}
+                deckName={item.deck.name}
+              />
+            )}
           </Collection>
         ) : (
           <Text padding="large" textAlign="center">

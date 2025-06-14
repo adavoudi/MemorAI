@@ -9,31 +9,45 @@ import {
   Heading,
 } from "@aws-amplify/ui-react";
 import { useRouter } from "next/navigation";
+import type { Schema } from "@/amplify/data/resource";
 
-export interface ReviewFile {
-  id: string;
-  phrases: string[]; // Just the front text for display
-  cardCount: number;
-  createdAt: string; // ISO date string
-}
+// Define the ReviewFile type from the generated schema
+type ReviewFile = Schema["ReviewFile"]["type"];
 
 interface ReviewFileItemProps {
   file: ReviewFile;
+  // The deck name is passed from the parent component
+  // because the file itself only contains the deckId.
+  deckName: string;
 }
 
-export default function ReviewFileItem({ file }: ReviewFileItemProps) {
+export default function ReviewFileItem({
+  file,
+  deckName,
+}: ReviewFileItemProps) {
   const router = useRouter();
+
+  const formattedDate = new Date(file.createdAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <Card variation="outlined">
       <Flex direction="column" gap="medium">
-        <Flex justifyContent="space-between" alignItems="center">
-          <Heading level={5}>
-            Review Session from {new Date(file.createdAt).toLocaleDateString()}
-          </Heading>
-          <Badge variation="info">{file.cardCount} cards</Badge>
+        <Flex justifyContent="space-between" alignItems="flex-start">
+          <Flex direction="column">
+            <Heading level={5}>{deckName}</Heading>
+            <Text fontSize="small" color="font.secondary">
+              Generated on {formattedDate}
+            </Text>
+          </Flex>
+          <Badge variation={file.isListened ? "success" : "info"}>
+            {file.isListened ? "Listened" : "Not Listened"}
+          </Badge>
         </Flex>
-        <Text isTruncated>Contains: {file.phrases.join(", ")}</Text>
+        <Text>Contains {file.cardCount} cards</Text>
         <Button
           variation="primary"
           onClick={() => router.push(`/review/play/${file.id}`)}
