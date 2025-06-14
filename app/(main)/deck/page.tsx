@@ -54,8 +54,6 @@ export default function DecksPage() {
   }, [user]);
 
   const handleCreateDeck = async () => {
-    const output = await client.queries.translate({ inputText: "hey there!" });
-    console.log("Translated:", output);
     if (!newDeckName.trim() || !user) return;
 
     setIsCreating(true);

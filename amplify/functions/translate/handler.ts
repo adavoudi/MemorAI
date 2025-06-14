@@ -12,8 +12,13 @@ export const handler: Schema["translate"]["functionHandler"] = async (
   event,
   context
 ) => {
-  // User prompt
-  const prompt = event.arguments.inputText;
+  const inputText = event.arguments.inputText;
+
+  const systemPrompt =
+    "You are a translator. The user gives you a English text and you should translate it to German both formally and informally.\n" +
+    "The output must be a json object in the following format (don't add any other explanation, just the following) as I want to parse it with \n" +
+    "the JSON.parse() function in JavaScript:\n" +
+    ' {"formal": "the formal translation (for formal writing/speaking)", "informal": "the informal translation (for informal writing/speaking)"}';
 
   // Invoke model
   const input = {
@@ -22,20 +27,19 @@ export const handler: Schema["translate"]["functionHandler"] = async (
     accept: "application/json",
     body: JSON.stringify({
       anthropic_version: "bedrock-2023-05-31",
-      system:
-        "You are a an expert at crafting a haiku. You are able to craft a haiku out of anything and therefore answer only in haiku.",
+      system: systemPrompt,
       messages: [
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: prompt,
+              text: inputText,
             },
           ],
         },
       ],
-      max_tokens: 1000,
+      max_tokens: 500,
       temperature: 0.5,
     }),
   } as InvokeModelCommandInput;

@@ -140,7 +140,7 @@ const schema = a
     translate: a
       .query()
       .arguments({ inputText: a.string().required() })
-      .returns(a.json())
+      .returns(a.string())
       .authorization((allow) => [allow.authenticated()])
       .handler(a.handler.function(translate)),
   })
