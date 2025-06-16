@@ -3,7 +3,7 @@ import type { AppSyncIdentityCognito } from "aws-lambda";
 import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
 import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
-import { randomUUID } from "crypto"; // Added import for generating unique IDs
+import { randomUUID } from "crypto";
 
 // Note: This assumes you have an environment variable for the function's environment.
 // If not, you might need to adjust how you get the env name.
@@ -42,7 +42,7 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
     // --- 1. Create Decks ---
     console.log("Creating decks...");
     const { data: deck1 } = await client.models.Deck.create({
-      name: "Business Travel",
+      name: "Business Travel (Expanded)",
       owner: ownerId,
     });
     const { data: deck2 } = await client.models.Deck.create({
@@ -53,7 +53,10 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
 
     // --- 2. Create Cards for Each Deck ---
     console.log("Creating cards...");
+
+    // Deck 1 now has 20 cards, 12 of which are due.
     const deck1CardData = [
+      // Due Cards (12 total)
       {
         front: "Where is the conference room?",
         back: "Wo ist der Konferenzraum?",
@@ -65,6 +68,58 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         dueOffset: 0,
       }, // Due today
       {
+        front: "The check, please.",
+        back: "Die Rechnung, bitte.",
+        dueOffset: -5,
+      }, // Due 5 days ago
+      {
+        front: "My laptop is not working.",
+        back: "Mein Laptop funktioniert nicht.",
+        dueOffset: -1,
+      }, // Due yesterday
+      {
+        front: "Where is the nearest ATM?",
+        back: "Wo ist der nächste Geldautomat?",
+        dueOffset: -2,
+      }, // Due 2 days ago
+      {
+        front: "I need to print a document.",
+        back: "Ich muss ein Dokument ausdrucken.",
+        dueOffset: 0,
+      }, // Due today
+      {
+        front: "What time is the meeting?",
+        back: "Um wie viel Uhr ist das Treffen?",
+        dueOffset: -3,
+      }, // Due 3 days ago
+      {
+        front: "Can you call a taxi for me?",
+        back: "Können Sie mir ein Taxi rufen?",
+        dueOffset: 0,
+      }, // Due today
+      {
+        front: "I'd like to check out.",
+        back: "Ich möchte auschecken.",
+        dueOffset: -1,
+      }, // Due yesterday
+      {
+        front: "The Wi-Fi password?",
+        back: "Das WLAN-Passwort?",
+        dueOffset: -4,
+      }, // Due 4 days ago
+      {
+        front: "Is breakfast included?",
+        back: "Ist das Frühstück inbegriffen?",
+        dueOffset: 0,
+      }, // Due today
+      {
+        front: "I missed my connection.",
+        back: "Ich habe meinen Anschlussflug verpasst.",
+        dueOffset: -5,
+      }, // Due 5 days ago
+
+      // Not Due Cards (8 total)
+      {
         front: "Can I have the invoice, please?",
         back: "Kann ich bitte die Rechnung haben?",
         dueOffset: 1,
@@ -74,6 +129,36 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         back: "Der Flug hat Verspätung.",
         dueOffset: 7,
       }, // Due next week
+      {
+        front: "Could you help me with my luggage?",
+        back: "Könnten Sie mir mit meinem Gepäck helfen?",
+        dueOffset: 1,
+      }, // Due tomorrow
+      {
+        front: "What is the best way to get to the city center?",
+        back: "Was ist der beste Weg, um ins Stadtzentrum zu gelangen?",
+        dueOffset: 2,
+      }, // Due in 2 days
+      {
+        front: "I need to change my room.",
+        back: "Ich muss mein Zimmer wechseln.",
+        dueOffset: 5,
+      }, // Due in 5 days
+      {
+        front: "Where can I find a good restaurant?",
+        back: "Wo finde ich ein gutes Restaurant?",
+        dueOffset: 8,
+      }, // Due in 8 days
+      {
+        front: "Do you offer room service?",
+        back: "Bieten Sie Zimmerservice an?",
+        dueOffset: 10,
+      }, // Due in 10 days
+      {
+        front: "How far is it to the airport?",
+        back: "Wie weit ist es zum Flughafen?",
+        dueOffset: 14,
+      }, // Due in 2 weeks
     ];
 
     const deck2CardData = [
@@ -88,7 +173,7 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         dueOffset: 0,
       }, // Due today
       {
-        front: "The check, please.",
+        front: "The bill, please.",
         back: "Die Rechnung, bitte.",
         dueOffset: -5,
       }, // Due last week
@@ -101,7 +186,6 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
 
     const createdCardIdsDeck1: string[] = [];
     for (const card of deck1CardData) {
-      // FIX: Added cardId, srsInterval, and srsEaseFactor to match the schema type.
       const { data: newCard } = await client.models.Card.create({
         cardId: randomUUID(),
         frontText: card.front,
@@ -112,11 +196,12 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         deckId: deck1!.id,
         owner: ownerId,
       });
-      createdCardIdsDeck1.push(newCard!.cardId);
+      if (newCard) {
+        createdCardIdsDeck1.push(newCard.cardId);
+      }
     }
 
     for (const card of deck2CardData) {
-      // FIX: Added cardId, srsInterval, and srsEaseFactor here as well.
       await client.models.Card.create({
         cardId: randomUUID(),
         frontText: card.front,
@@ -133,29 +218,36 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
     );
 
     // --- 3. Create Review Files ---
+    // Note: We'll just use the first few cards for the review files for simplicity.
     console.log("Creating review files...");
-    await client.models.ReviewFile.create({
-      deckId: deck1!.id,
-      cardIds: [createdCardIdsDeck1[0], createdCardIdsDeck1[2]],
-      cardCount: 2,
-      isListened: true,
-      lastListenedAt: new Date(
-        Date.now() - 2 * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      s3Path: "mock/listened_review.mp3",
-      subtitleS3Path: "mock/listened_review.vtt",
-      owner: ownerId,
-    });
-    await client.models.ReviewFile.create({
-      deckId: deck1!.id,
-      cardIds: [createdCardIdsDeck1[1], createdCardIdsDeck1[3]],
-      cardCount: 2,
-      isListened: false,
-      s3Path: "mock/new_review.mp3",
-      subtitleS3Path: "mock/new_review.vtt",
-      owner: ownerId,
-    });
-    console.log("Created 2 review files.");
+    if (createdCardIdsDeck1.length >= 4) {
+      await client.models.ReviewFile.create({
+        deckId: deck1!.id,
+        cardIds: [createdCardIdsDeck1[0], createdCardIdsDeck1[2]],
+        cardCount: 2,
+        isListened: true,
+        lastListenedAt: new Date(
+          Date.now() - 2 * 24 * 60 * 60 * 1000
+        ).toISOString(),
+        s3Path: "mock/listened_review.mp3",
+        subtitleS3Path: "mock/listened_review.vtt",
+        owner: ownerId,
+        ready: true,
+      });
+      await client.models.ReviewFile.create({
+        deckId: deck1!.id,
+        cardIds: [createdCardIdsDeck1[1], createdCardIdsDeck1[3]],
+        cardCount: 2,
+        isListened: false,
+        s3Path: "mock/new_review.mp3",
+        subtitleS3Path: "mock/new_review.vtt",
+        owner: ownerId,
+        ready: true,
+      });
+      console.log("Created 2 review files.");
+    } else {
+      console.log("Skipping review file creation due to insufficient cards.");
+    }
 
     // --- 4. Create Daily Stats for the past few days ---
     console.log("Creating daily stats...");
@@ -195,10 +287,16 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
     };
   } catch (error) {
     console.error("Failed to create mock data:", error);
+    // It's good practice to cast the error to access its properties safely.
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       status: "Error",
       message: "An error occurred while creating mock data.",
-      details: error,
+      details: {
+        name: error instanceof Error ? error.name : "UnknownError",
+        message: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+      },
     };
   }
 };

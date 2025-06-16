@@ -1,6 +1,11 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 import { createMockData } from "../functions/create-mock-data/resource";
 import { translate } from "../functions/translate/resource";
+import {
+  notifyCompletion,
+  processCardSet,
+  startReviewGeneration,
+} from "../functions/review-generation/resource";
 
 const schema = a
   .schema({
@@ -85,7 +90,8 @@ const schema = a
         lastListenedAt: a
           .datetime()
           .authorization((allow) => [allow.owner().to(["read", "update"])]),
-        cardIds: a.id().array(),
+        ready: a.boolean().required().default(false),
+        cardIds: a.id().array().required(),
         deckId: a.id().required(),
         deck: a.belongsTo("Deck", "deckId"),
       })
@@ -104,7 +110,7 @@ const schema = a
           .required()
           .authorization((allow) => [allow.owner().to(["read"])]),
         isRead: a.boolean().required().default(false),
-        link: a.url().authorization((allow) => [allow.owner().to(["read"])]),
+        link: a.string().authorization((allow) => [allow.owner().to(["read"])]),
       })
       .authorization((allow) => [
         allow.ownerDefinedIn("owner").to(["read", "update"]),
@@ -143,8 +149,20 @@ const schema = a
       .returns(a.string())
       .authorization((allow) => [allow.authenticated()])
       .handler(a.handler.function(translate)),
+
+    startReviewGeneration: a
+      .query()
+      .arguments({ deckId: a.id().required() })
+      .returns(a.json())
+      .authorization((allow) => [allow.authenticated()])
+      .handler(a.handler.function(startReviewGeneration)),
   })
-  .authorization((allow) => [allow.resource(createMockData)]);
+  .authorization((allow) => [
+    allow.resource(createMockData),
+    allow.resource(startReviewGeneration),
+    allow.resource(processCardSet),
+    allow.resource(notifyCompletion),
+  ]);
 
 export type Schema = ClientSchema<typeof schema>;
 
