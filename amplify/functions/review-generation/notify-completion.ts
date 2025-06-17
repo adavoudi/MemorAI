@@ -35,7 +35,8 @@ export const handler = async (event: SNSEvent) => {
 
       await data_client.models.ReviewFile.update({
         id: reviewFileId,
-        ready: true,
+        statusCode: "ready",
+        statusMessage: "Ready",
       });
 
       const output = await data_client.models.Notification.create({

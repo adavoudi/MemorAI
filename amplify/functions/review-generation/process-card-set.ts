@@ -24,21 +24,24 @@ export const handler = async (event: SQSEvent, context: Context) => {
   ]);
 
   for (const record of event.Records) {
+    const payload = JSON.parse(record.body);
+    const { deckId, reviewFileId, cards, ownerId } = payload;
     try {
-      const payload = JSON.parse(record.body);
-      const { deckId, reviewFileId, cards, ownerId } = payload;
-
       console.log(
         `[process-card-set] Processing reviewFileId: ${reviewFileId} for deckId: ${deckId}`
       );
 
-      // const ssmlOutput = await generateStoryAndSsml(
-      //   cards,
-      //   prompt_story,
-      //   prompt_ssml
-      // );
+      await data_client.models.ReviewFile.update({
+        id: reviewFileId,
+        statusCode: "processing",
+        statusMessage: "Processing",
+      });
 
-      const ssmlOutput = "<speak>Hello world</speak>";
+      const ssmlOutput = await generateStoryAndSsml(
+        cards,
+        prompt_story,
+        prompt_ssml
+      );
 
       const pollySpeechMarkTask = await startSpeechSynthesis(
         ssmlOutput,
@@ -47,7 +50,7 @@ export const handler = async (event: SQSEvent, context: Context) => {
         true
       );
 
-      data_client.models.ReviewFile.update({
+      await data_client.models.ReviewFile.update({
         id: reviewFileId,
         subtitleS3Path: pollySpeechMarkTask.SynthesisTask?.OutputUri,
       });
@@ -65,7 +68,7 @@ export const handler = async (event: SQSEvent, context: Context) => {
         )
       );
 
-      data_client.models.ReviewFile.update({
+      await data_client.models.ReviewFile.update({
         id: reviewFileId,
         s3Path: pollyTask.SynthesisTask?.OutputUri,
       });
@@ -78,6 +81,11 @@ export const handler = async (event: SQSEvent, context: Context) => {
         `[process-card-set] Failed to process record: ${record.messageId}`,
         error
       );
+      await data_client.models.ReviewFile.update({
+        id: reviewFileId,
+        statusCode: "error",
+        statusMessage: error as string,
+      });
       // Depending on retry policy, the message might be re-processed or sent to a DLQ.
       // Throwing an error will cause SQS to retry the message based on queue configuration.
       throw error;

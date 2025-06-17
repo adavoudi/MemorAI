@@ -90,7 +90,8 @@ const schema = a
         lastListenedAt: a
           .datetime()
           .authorization((allow) => [allow.owner().to(["read", "update"])]),
-        ready: a.boolean().required().default(false),
+        statusCode: a.string().required().default("pending"),
+        statusMessage: a.string().required().default("Pending"),
         cardIds: a.id().array().required(),
         deckId: a.id().required(),
         deck: a.belongsTo("Deck", "deckId"),
@@ -151,7 +152,7 @@ const schema = a
       .handler(a.handler.function(translate)),
 
     startReviewGeneration: a
-      .query()
+      .mutation()
       .arguments({ deckId: a.id().required() })
       .returns(a.json())
       .authorization((allow) => [allow.authenticated()])

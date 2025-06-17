@@ -232,7 +232,8 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         s3Path: "mock/listened_review.mp3",
         subtitleS3Path: "mock/listened_review.vtt",
         owner: ownerId,
-        ready: true,
+        statusCode: "ready",
+        statusMessage: "Ready",
       });
       await client.models.ReviewFile.create({
         deckId: deck1!.id,
@@ -242,7 +243,8 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         s3Path: "mock/new_review.mp3",
         subtitleS3Path: "mock/new_review.vtt",
         owner: ownerId,
-        ready: true,
+        statusCode: "ready",
+        statusMessage: "Ready",
       });
       console.log("Created 2 review files.");
     } else {

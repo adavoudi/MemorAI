@@ -18,14 +18,14 @@ export const generateStoryAndSsml = async (
   storyPrompt: string,
   ssmlPrompt: string
 ): Promise<string> => {
-  const cardBullets = cards.slice(0, 4).map((card) => `- ${card.backText}`);
+  const cardBullets = cards.map((card) => `- ${card.backText}`);
 
   // 1. Generate the story
   const storyInput = `${storyPrompt}\n\n${cardBullets.join("\n")}`;
   const storyOutput = await invokeClaude(
     storyInput,
     "Generate a short story based on the user's list.",
-    { max_tokens: 100 }
+    { max_tokens: 1000 }
   );
   console.log("Generated story successfully.");
 
@@ -50,7 +50,7 @@ export const generateStoryAndSsml = async (
   const ssmlOutput = await invokeClaude(
     finalSsmlPrompt,
     "Generate SSML markup based on the user's provided story and sentences.",
-    { max_tokens: 100 }
+    { max_tokens: 7000 }
   );
   console.log("Generated SSML successfully.");
 
@@ -77,7 +77,7 @@ async function invokeClaude(
     const response = await anthropic.messages.create({
       model: model,
       max_tokens: max_tokens,
-      system: systemPrompt,
+      // system: systemPrompt,
       messages: [{ role: "user", content: prompt }],
     });
 

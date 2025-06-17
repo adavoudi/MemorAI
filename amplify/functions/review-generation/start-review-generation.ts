@@ -24,7 +24,7 @@ const sqsClient = new SQSClient({});
 export const handler: Schema["startReviewGeneration"]["functionHandler"] =
   async (event, context) => {
     const identity = event.identity as AppSyncIdentityCognito;
-    const ownerId = "84a8f448-5071-7059-facd-1c1321c7bf93"; //identity.username; // Cognito 'sub'
+    const ownerId = identity.username;
     const { deckId } = event.arguments;
     console.log(
       `[start-review-generation] Processing request for deckId: ${deckId}`
@@ -45,7 +45,7 @@ export const handler: Schema["startReviewGeneration"]["functionHandler"] =
 
       if (cards.length < 5) {
         console.log(
-          `[start-review-generation] Not enough cards. Found ${cards.length}, require 5.`
+          `[start-review-generation] Not enough cards. Found ${cards.length}, require at least 5.`
         );
         return {
           statusCode: 400,
@@ -61,12 +61,14 @@ export const handler: Schema["startReviewGeneration"]["functionHandler"] =
 
       for (const chunk of cardChunks) {
         // set the cards as reviewInclusionDate to today
-        // chunk.forEach((card) => {
-        //   data_client.models.Card.update({
-        //     cardId: card.cardId,
-        //     reviewInclusionDate: getDate(0),
-        //   });
-        // });
+        const updatePromises = chunk.map((card) => {
+          return data_client.models.Card.update({
+            cardId: card.cardId,
+            reviewInclusionDate: getDate(0),
+          });
+        });
+
+        await Promise.all(updatePromises);
 
         const reviewFileId = uuidv4();
         data_client.models.ReviewFile.create({
@@ -76,7 +78,8 @@ export const handler: Schema["startReviewGeneration"]["functionHandler"] =
           cardCount: chunk.length,
           cardIds: chunk.map((c) => c.cardId),
           isListened: false,
-          ready: false,
+          statusCode: "pending",
+          statusMessage: "Pending",
         });
 
         const messagePayload = {
