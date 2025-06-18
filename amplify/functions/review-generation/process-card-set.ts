@@ -7,7 +7,7 @@ import { getSnsTopicArn } from "./utils/utils";
 import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/api";
 import { Schema } from "../../data/resource";
-import { env } from "$amplify/env/generate-review-files";
+import { env } from "$amplify/env/process-card-set";
 import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
 import { uploadData } from "aws-amplify/storage";
 

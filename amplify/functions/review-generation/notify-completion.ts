@@ -3,7 +3,7 @@ import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "../../data/resource";
 import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
-import { env } from "$amplify/env/generate-review-files";
+import { env } from "$amplify/env/notify-completion";
 const { resourceConfig, libraryOptions } =
   await getAmplifyDataClientConfig(env);
 

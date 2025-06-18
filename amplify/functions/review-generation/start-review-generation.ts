@@ -10,7 +10,7 @@ import { getReviewableCards } from "./services/dataService";
 import { chunkArray, getDate, getSqsQueueUrl } from "./utils/utils";
 
 import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
-import { env } from "$amplify/env/generate-review-files";
+import { env } from "$amplify/env/start-review-generation";
 import { AppSyncIdentityCognito } from "aws-lambda";
 const { resourceConfig, libraryOptions } =
   await getAmplifyDataClientConfig(env);
