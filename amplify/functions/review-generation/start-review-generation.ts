@@ -80,6 +80,8 @@ export const handler: Schema["startReviewGeneration"]["functionHandler"] =
           isListened: false,
           statusCode: "pending",
           statusMessage: "Pending",
+          cardsBackText: chunk.map((c) => c.backText).join("\n"),
+          cardsFrontText: chunk.map((c) => c.frontText).join("\n"),
         });
 
         const messagePayload = {

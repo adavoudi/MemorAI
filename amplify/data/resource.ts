@@ -93,6 +93,8 @@ const schema = a
         statusCode: a.string().required().default("pending"),
         statusMessage: a.string().required().default("Pending"),
         cardIds: a.id().array().required(),
+        cardsFrontText: a.string().required(),
+        cardsBackText: a.string().required(),
         deckId: a.id().required(),
         deck: a.belongsTo("Deck", "deckId"),
       })

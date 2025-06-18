@@ -1,4 +1,7 @@
-import { StartSpeechSynthesisTaskCommand } from "@aws-sdk/client-polly";
+import {
+  LanguageCode,
+  StartSpeechSynthesisTaskCommand,
+} from "@aws-sdk/client-polly";
 import { config } from "../config";
 
 const pollyClient = config.clients.polly;
@@ -20,6 +23,7 @@ export const startSpeechSynthesis = async (
     SampleRate: config.polly.sampleRate,
     Text: ssmlText,
     TextType: "ssml",
+    LanguageCode: config.polly.languageCode as LanguageCode,
     VoiceId: config.polly.voiceId,
     OutputS3BucketName: config.s3.storageBucket,
     SnsTopicArn: snsTopicArn,

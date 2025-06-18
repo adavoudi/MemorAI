@@ -9,6 +9,7 @@ import { generateClient } from "aws-amplify/api";
 import { Schema } from "../../data/resource";
 import { env } from "$amplify/env/generate-review-files";
 import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
+import { uploadData } from "aws-amplify/storage";
 
 const { resourceConfig, libraryOptions } =
   await getAmplifyDataClientConfig(env);
@@ -43,6 +44,8 @@ export const handler = async (event: SQSEvent, context: Context) => {
         prompt_ssml
       );
 
+      console.log("SSML output:", ssmlOutput);
+
       const pollySpeechMarkTask = await startSpeechSynthesis(
         ssmlOutput,
         `polly/${reviewFileId}/${ownerId}/`,
@@ -52,7 +55,7 @@ export const handler = async (event: SQSEvent, context: Context) => {
 
       await data_client.models.ReviewFile.update({
         id: reviewFileId,
-        subtitleS3Path: pollySpeechMarkTask.SynthesisTask?.OutputUri,
+        subtitleS3Path: `polly/${pollySpeechMarkTask.SynthesisTask?.OutputUri?.split("/polly/")[1]}`,
       });
 
       console.log(
@@ -70,7 +73,7 @@ export const handler = async (event: SQSEvent, context: Context) => {
 
       await data_client.models.ReviewFile.update({
         id: reviewFileId,
-        s3Path: pollyTask.SynthesisTask?.OutputUri,
+        s3Path: `polly/${pollyTask.SynthesisTask?.OutputUri?.split("/polly/")[1]}`,
       });
 
       console.log(

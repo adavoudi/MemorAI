@@ -30,6 +30,8 @@ export const backend = defineBackend({
   notifyCompletion,
 });
 
+// backend.storage.resources.bucket.grantPublicAccess("polly/*");
+
 const customResourceStack = backend.createStack("CustomResources");
 
 const topic = new sns.Topic(customResourceStack, "MySnsTopic", {

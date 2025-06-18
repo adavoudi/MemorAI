@@ -112,11 +112,6 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         back: "Ist das Frühstück inbegriffen?",
         dueOffset: 0,
       }, // Due today
-      {
-        front: "I missed my connection.",
-        back: "Ich habe meinen Anschlussflug verpasst.",
-        dueOffset: -5,
-      }, // Due 5 days ago
 
       // Not Due Cards (8 total)
       {
@@ -234,6 +229,14 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         owner: ownerId,
         statusCode: "ready",
         statusMessage: "Ready",
+        cardsBackText: deck1CardData
+          .slice(0, 2)
+          .map((c) => c.back)
+          .join("\n"),
+        cardsFrontText: deck1CardData
+          .slice(0, 2)
+          .map((c) => c.front)
+          .join("\n"),
       });
       await client.models.ReviewFile.create({
         deckId: deck1!.id,
@@ -245,6 +248,14 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
         owner: ownerId,
         statusCode: "ready",
         statusMessage: "Ready",
+        cardsBackText: deck1CardData
+          .slice(3, 5)
+          .map((c) => c.back)
+          .join("\n"),
+        cardsFrontText: deck1CardData
+          .slice(3, 5)
+          .map((c) => c.front)
+          .join("\n"),
       });
       console.log("Created 2 review files.");
     } else {

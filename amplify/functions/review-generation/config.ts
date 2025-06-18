@@ -1,5 +1,5 @@
 import { SQS_QUEUE_NAME } from "./resource";
-import { PollyClient } from "@aws-sdk/client-polly";
+import { LanguageCode, PollyClient } from "@aws-sdk/client-polly";
 import { SNSClient } from "@aws-sdk/client-sns";
 import { S3Client } from "@aws-sdk/client-s3";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -27,7 +27,8 @@ export const config = {
     modelId: process.env.MODEL_ID,
   },
   polly: {
-    voiceId: "Ruth" as VoiceId,
+    voiceId: "Vicki" as VoiceId,
+    languageCode: "de-DE",
     engine: "neural" as Engine,
     sampleRate: "24000",
     outputFormat: "mp3" as OutputFormat,

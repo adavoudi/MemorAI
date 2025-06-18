@@ -22,6 +22,9 @@ export const generateStoryAndSsml = async (
 
   // 1. Generate the story
   const storyInput = `${storyPrompt}\n\n${cardBullets.join("\n")}`;
+
+  console.log("Story input:", storyInput);
+
   const storyOutput = await invokeClaude(
     storyInput,
     "Generate a short story based on the user's list.",
@@ -32,9 +35,9 @@ export const generateStoryAndSsml = async (
   // 2. Prepare and generate the SSML
   const parameters = {
     instructional_language_name: "English",
-    instructional_language_code: "en",
+    instructional_language_code: "en-US",
     target_language_name: "German",
-    target_language_code: "de",
+    target_language_code: "de-DE",
     story: storyOutput,
     original_sentences_list: cardBullets.join("\n"),
   };
@@ -46,6 +49,8 @@ export const generateStoryAndSsml = async (
       value
     );
   }
+
+  console.log("SSML prompt:", finalSsmlPrompt);
 
   const ssmlOutput = await invokeClaude(
     finalSsmlPrompt,
