@@ -212,56 +212,6 @@ export const handler: Schema["createMockData"]["functionHandler"] = async (
       `Created ${deck1CardData.length + deck2CardData.length} cards.`
     );
 
-    // --- 3. Create Review Files ---
-    // Note: We'll just use the first few cards for the review files for simplicity.
-    console.log("Creating review files...");
-    if (createdCardIdsDeck1.length >= 4) {
-      await client.models.ReviewFile.create({
-        deckId: deck1!.id,
-        cardIds: [createdCardIdsDeck1[0], createdCardIdsDeck1[2]],
-        cardCount: 2,
-        isListened: true,
-        lastListenedAt: new Date(
-          Date.now() - 2 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        s3Path: "mock/listened_review.mp3",
-        subtitleS3Path: "mock/listened_review.vtt",
-        owner: ownerId,
-        statusCode: "ready",
-        statusMessage: "Ready",
-        cardsBackText: deck1CardData
-          .slice(0, 2)
-          .map((c) => c.back)
-          .join("\n"),
-        cardsFrontText: deck1CardData
-          .slice(0, 2)
-          .map((c) => c.front)
-          .join("\n"),
-      });
-      await client.models.ReviewFile.create({
-        deckId: deck1!.id,
-        cardIds: [createdCardIdsDeck1[1], createdCardIdsDeck1[3]],
-        cardCount: 2,
-        isListened: false,
-        s3Path: "mock/new_review.mp3",
-        subtitleS3Path: "mock/new_review.vtt",
-        owner: ownerId,
-        statusCode: "ready",
-        statusMessage: "Ready",
-        cardsBackText: deck1CardData
-          .slice(3, 5)
-          .map((c) => c.back)
-          .join("\n"),
-        cardsFrontText: deck1CardData
-          .slice(3, 5)
-          .map((c) => c.front)
-          .join("\n"),
-      });
-      console.log("Created 2 review files.");
-    } else {
-      console.log("Skipping review file creation due to insufficient cards.");
-    }
-
     // --- 4. Create Daily Stats for the past few days ---
     console.log("Creating daily stats...");
     for (let i = 1; i <= 3; i++) {
