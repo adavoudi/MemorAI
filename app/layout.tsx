@@ -9,6 +9,7 @@ import {
   Heading,
   useAuthenticator,
   Button,
+  Message,
 } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 
@@ -23,9 +24,28 @@ const components = {
     const { tokens } = useTheme();
 
     return (
-      <View textAlign="center" padding={tokens.space.large}>
-        <Image alt="Amplify logo" src="/Memorai.png" width={200} />
-      </View>
+      <>
+        <View textAlign="center" padding={tokens.space.large}>
+          <Image alt="Amplify logo" src="/Memorai.png" width={200} />
+        </View>
+        <Message
+          variation="filled"
+          colorTheme="info"
+          heading="Account Creation for Hackathon Judges"
+          margin={10}
+        >
+          <p>Hello, </p>
+          <p>
+            Please note that public signup is currently disabled to manage the
+            costs associated with our LLM APIs.
+          </p>
+          <p>
+            If you are a Hackathon judge, please contact me via email or the
+            Hackathon platform, and I will promptly create an account for you.
+          </p>
+          <p>Thank you for your understanding.</p>
+        </Message>
+      </>
     );
   },
 
@@ -200,70 +220,6 @@ const components = {
   },
 };
 
-const formFields = {
-  signIn: {
-    username: {
-      placeholder: "Enter your email",
-    },
-  },
-  signUp: {
-    password: {
-      label: "Password:",
-      placeholder: "Enter your Password:",
-      isRequired: false,
-      order: 2,
-    },
-    confirm_password: {
-      label: "Confirm Password:",
-      order: 1,
-    },
-  },
-  forceNewPassword: {
-    password: {
-      placeholder: "Enter your Password:",
-    },
-  },
-  forgotPassword: {
-    username: {
-      placeholder: "Enter your email:",
-    },
-  },
-  confirmResetPassword: {
-    confirmation_code: {
-      placeholder: "Enter your Confirmation Code:",
-      label: "New Label",
-      isRequired: false,
-    },
-    confirm_password: {
-      placeholder: "Enter your Password Please:",
-    },
-  },
-  setupTotp: {
-    QR: {
-      totpIssuer: "test issuer",
-      totpUsername: "amplify_qr_test_user",
-    },
-    confirmation_code: {
-      label: "New Label",
-      placeholder: "Enter your Confirmation Code:",
-      isRequired: false,
-    },
-  },
-  confirmSignIn: {
-    confirmation_code: {
-      label: "New Label",
-      placeholder: "Enter your Confirmation Code:",
-      isRequired: false,
-    },
-  },
-  setupEmail: {
-    email: {
-      label: "New Label",
-      placeholder: "Please enter your Email:",
-    },
-  },
-};
-
 export default function RootLayout({
   children,
 }: {
@@ -272,7 +228,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Authenticator formFields={formFields} components={components}>
+        <Authenticator components={components} hideSignUp={true}>
           {children}
         </Authenticator>
       </body>
