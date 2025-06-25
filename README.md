@@ -47,10 +47,14 @@ The diagram below illustrates the event-driven architecture that powers MemorAI'
 1. A user's request from the Next.js app to generate a review file triggers the `start-review-generation` Lambda via an AppSync mutation.
 2. This function validates the request, claims the due cards in DynamoDB, and places a job message into the `GenerateReviewFilesQueue` (SQS).
 3. The SQS queue triggers the `process-card-set` Lambda, which is our main workhorse.
-4. This function calls **Amazon Bedrock** twice: first, to generate a creative story from the card content, and second, to convert that story into a structured SSML file.
+4. This function calls the **Anthropic Claude API** directly twice: first, to generate a creative story from the card content, and second, to convert that story into a structured SSML file.
 5. It then starts an asynchronous synthesis task with **Amazon Polly**, telling it to save the final MP3 and speech mark files to an S3 bucket and to publish a status update to an SNS topic upon completion.
 6. The SNS topic triggers the `notify-completion` Lambda.
 7. This final function updates the database record with the S3 file paths and a 'ready' status, and creates a notification that is instantly delivered to the user via the AppSync GraphQL subscription.
+
+### **Note on AI Model Usage**
+
+During testing with Claude Sonnet 4 on AWS Bedrock, I encountered output token limits that appeared to be account-level restrictions requiring AWS support intervention. Due to hackathon deadline constraints, I implemented the story and SSML generation tasks using the Anthropic Claude API directly while awaiting AWS support feedback. The translation function continues to use Amazon Bedrock as originally planned.
 
 ## **Prompts**
 
