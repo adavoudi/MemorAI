@@ -13,11 +13,7 @@ import {
 } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./app.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 const components = {
   Header() {
@@ -28,23 +24,25 @@ const components = {
         <View textAlign="center" padding={tokens.space.large}>
           <Image alt="Amplify logo" src="/Memorai.png" width={200} />
         </View>
-        <Message
-          variation="filled"
-          colorTheme="info"
-          heading="Account Creation for Hackathon Judges"
-          margin={10}
-        >
-          <p>Hello, </p>
-          <p>
-            Please note that public signup is currently disabled to manage the
-            costs associated with our LLM APIs.
-          </p>
-          <p>
-            If you are a Hackathon judge, please contact me via email or the
-            Hackathon platform, and I will promptly create an account for you.
-          </p>
-          <p>Thank you for your understanding.</p>
-        </Message>
+        {window.location.href.includes("d3qcb1twatuwof") && (
+          <Message
+            variation="filled"
+            colorTheme="info"
+            heading="Account Creation for Hackathon Judges"
+            margin={10}
+          >
+            <p>Hello, </p>
+            <p>
+              Please note that public signup is currently disabled to manage the
+              costs associated with our LLM APIs.
+            </p>
+            <p>
+              If you are a Hackathon judge, please contact me via email or the
+              Hackathon platform, and I will promptly create an account for you.
+            </p>
+            <p>Thank you for your understanding.</p>
+          </Message>
+        )}
       </>
     );
   },
@@ -228,7 +226,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Authenticator components={components} hideSignUp={true}>
+        <Authenticator components={components} hideSignUp={false}>
           {children}
         </Authenticator>
       </body>
