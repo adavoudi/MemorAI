@@ -6,7 +6,7 @@ This repository contains the full-stack source code for the MemorAI application,
 
 ### **Demos**
 
-- **MemorAI Introduction (3-min overview):** [Watch on YouTube](https://youtu.be/q6rDukNIyGo)
+- **MemorAI Introduction (3-min overview):** [Watch on YouTube](https://www.youtube.com/watch?v=4CYabcWYygk)
 - **UI Tutorial & Feature Walkthrough:** [Watch on YouTube](https://youtu.be/c9-9NZydUnQ)
 
 ## **The Role of AWS Lambda**
@@ -15,6 +15,10 @@ AWS Lambda is the serverless compute engine at the heart of this project, acting
 
 1. **Asynchronous Audio Generation:** A chain of Lambda functions orchestrates the complex, long-running task of generating audio reviews. This event-driven workflow ensures the user interface remains fast and responsive while the heavy lifting happens reliably in the background.
 2. **Custom API Logic:** Lambda also powers simple, direct API queries. For example, the `translate` function in our GraphQL API is a Lambda that takes text, calls Amazon Bedrock to get a translation, and returns the result directly to the user.
+
+### **Monitoring & Error Handling**
+
+We send all Lambda logs to CloudWatch and create one CloudWatch alarm for each Lambda function to track the number of errors in 5-minute windows. If the number of errors exceeds 1, we send a notification email to ensure rapid response to any issues.
 
 ## **Tech Stack & Architecture**
 
@@ -48,6 +52,10 @@ The diagram below illustrates the event-driven architecture that powers MemorAI'
 6. The SNS topic triggers the `notify-completion` Lambda.
 7. This final function updates the database record with the S3 file paths and a 'ready' status, and creates a notification that is instantly delivered to the user via the AppSync GraphQL subscription.
 
+## **Prompts**
+
+You can find all AI prompts used in this application in the `prompts` directory in the root of this repository.
+
 ## **Deployment**
 
 This application is designed to be deployed to **AWS Amplify Hosting**, which provides a git-based CI/CD workflow.
@@ -71,9 +79,3 @@ This application is designed to be deployed to **AWS Amplify Hosting**, which pr
 4. **Trigger a build.** Go to your app in the Amplify Console and click **Redeploy this version** to start a new build that includes the secret environment variable.
 
 Your application will now be live and accessible at the URL provided by Amplify Hosting.
-
-## **Important Notes on Private Assets**
-
-Please be aware that some assets used in this project are proprietary and are not included in this public repository.
-
-- **Generative AI Prompts:** The specific prompts used to instruct the Claude model on Amazon Bedrock are private. They are stored in an S3 bucket at `s3://memorai-secret-files/` in the files `prompt-story.md` and `prompt-ssml.md`. The backend Lambda functions are configured to access these files, but they are not available here. To run this project yourself, you will need to create your own prompts and modify the Lambda functions to access them from your own secure location.
