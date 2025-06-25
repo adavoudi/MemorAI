@@ -2,8 +2,11 @@ import { defineBackend } from "@aws-amplify/backend";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { Duration } from "aws-cdk-lib";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as subscriptions from "aws-cdk-lib/aws-sns-subscriptions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as actions from "aws-cdk-lib/aws-cloudwatch-actions";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { LambdaSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 import { BucketDeployment, Source } from "aws-cdk-lib/aws-s3-deployment";
@@ -38,6 +41,14 @@ const CONFIG = {
       batchSize: 1,
       maxConcurrency: 2,
     },
+  },
+  CLOUDWATCH: {
+    alarm: {
+      threshold: 1,
+      evaluationPeriods: 1,
+      metricPeriod: Duration.minutes(5),
+    },
+    // email: "your-email@example.com",
   },
   BEDROCK_ARNS: {
     foundationModel: `arn:aws:bedrock:*::foundation-model/*`,
@@ -166,6 +177,74 @@ function setupSQSEventSource(queue: sqs.Queue) {
   backend.processCardSet.resources.lambda.addEventSource(eventSource);
 }
 
+// Create shared SNS topic for error notifications
+function createSharedAlarmTopic(stack: any) {
+  const alarmTopic = new sns.Topic(stack, "LambdaErrorAlarmTopic", {
+    displayName: "Lambda Error Notifications",
+  });
+
+  // Subscribe email to the topic
+  // alarmTopic.addSubscription(
+  //   new subscriptions.EmailSubscription(CONFIG.CLOUDWATCH.email)
+  // );
+
+  return alarmTopic;
+}
+
+// Create CloudWatch alarm for a specific Lambda function
+function createLambdaErrorAlarm(
+  functionName: string,
+  lambdaFunction: any,
+  alarmTopic: sns.Topic
+) {
+  const errorAlarm = new cloudwatch.Alarm(
+    lambdaFunction.resources.lambda.stack,
+    `${functionName}ErrorAlarm`,
+    {
+      alarmName: `${functionName}-ErrorAlarm`,
+      alarmDescription: `Alarm when ${functionName} Lambda function errors exceed threshold`,
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/Lambda",
+        metricName: "Errors",
+        dimensionsMap: {
+          FunctionName: lambdaFunction.resources.lambda.functionName,
+        },
+        statistic: "Sum",
+        period: CONFIG.CLOUDWATCH.alarm.metricPeriod,
+      }),
+      threshold: CONFIG.CLOUDWATCH.alarm.threshold,
+      evaluationPeriods: CONFIG.CLOUDWATCH.alarm.evaluationPeriods,
+      comparisonOperator:
+        cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }
+  );
+
+  // Add SNS notification to the alarm
+  errorAlarm.addAlarmAction(new actions.SnsAction(alarmTopic));
+
+  return errorAlarm;
+}
+
+// Setup CloudWatch monitoring for all Lambda functions
+function setupCloudWatchMonitoring(customResourceStack: any) {
+  // Create shared SNS topic in the custom resources stack
+  const alarmTopic = createSharedAlarmTopic(customResourceStack);
+
+  // Create alarms for each Lambda function in their respective stacks
+  const lambdaFunctions = [
+    { name: "StartReviewGeneration", lambda: backend.startReviewGeneration },
+    { name: "ProcessCardSet", lambda: backend.processCardSet },
+    { name: "NotifyCompletion", lambda: backend.notifyCompletion },
+    { name: "Translate", lambda: backend.translate },
+    { name: "CreateMockData", lambda: backend.createMockData },
+  ];
+
+  lambdaFunctions.forEach(({ name, lambda }) => {
+    createLambdaErrorAlarm(name, lambda, alarmTopic);
+  });
+}
+
 // Main setup function
 function setupCustomResources() {
   const customResourceStack = backend.createStack("CustomResources");
@@ -175,8 +254,9 @@ function setupCustomResources() {
   const lockTable = createLockTable(customResourceStack);
   const queue = createSQSQueue(customResourceStack);
 
-  // Setup event sources
+  // Setup event sources and monitoring
   setupSQSEventSource(queue);
+  setupCloudWatchMonitoring(customResourceStack);
 }
 
 // Execute setup
