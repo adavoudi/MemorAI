@@ -28,7 +28,7 @@ export const handler = async (event: SQSEvent, context: Context) => {
     const { deckId, reviewFileId, cards, ownerId } = payload;
     try {
       console.log(
-        `[process-card-set] Processing reviewFileId: ${reviewFileId} for deckId: ${deckId}`
+        `[process-card-set] Processing reviewFileId:  ${reviewFileId} for deckId: ${deckId}`
       );
 
       await data_client.models.ReviewFile.update({
@@ -88,8 +88,6 @@ export const handler = async (event: SQSEvent, context: Context) => {
         statusCode: "error",
         statusMessage: error as string,
       });
-      // Depending on retry policy, the message might be re-processed or sent to a DLQ.
-      // Throwing an error will cause SQS to retry the message based on queue configuration.
       throw error;
     }
   }

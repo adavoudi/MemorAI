@@ -28,7 +28,6 @@ export const handler = async (event: SNSEvent) => {
         `[save-review-file] Received completion for Polly TaskId: ${taskId}`
       );
 
-      // Example outputUri: "s3://amplify-awsamplifygen2-al-memoraistoragebucket9519-kwhrai4vdwsl/polly/3c69c4e5-0926-4522-9533-99ea20329f25/ownerID/.ab9ed8dd-58c3-4d44-96e9-63da54e6c558.mp3"
       const uriParts = outputUri.split("/");
       const ownerId = uriParts[uriParts.length - 2];
       const reviewFileId = uriParts[uriParts.length - 3];
@@ -53,7 +52,6 @@ export const handler = async (event: SNSEvent) => {
       );
     } catch (error) {
       console.error(`[save-review-file] Failed to process SNS message:`, error);
-      // Errors here should be logged. Retrying won't help if the message is malformed.
     }
   }
 };

@@ -8,6 +8,7 @@ export const storage = defineStorage({
       allow.resource(processCardSet).to(["write"]),
       allow.authenticated.to(["read"]),
     ],
+    "prompts/*": [allow.resource(processCardSet).to(["read"])],
     "bedrock/*": [allow.resource(processCardSet).to(["write"])],
   }),
 });
