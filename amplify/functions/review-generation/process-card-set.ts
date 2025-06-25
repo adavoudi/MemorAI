@@ -1,5 +1,4 @@
 import type { Context, SQSEvent } from "aws-lambda";
-import { getTextFromS3 } from "./services/s3Service";
 import { generateStoryAndSsml } from "./services/bedrockService";
 import { startSpeechSynthesis } from "./services/pollyService";
 import { config } from "./config";
@@ -9,7 +8,7 @@ import { generateClient } from "aws-amplify/api";
 import { Schema } from "../../data/resource";
 import { env } from "$amplify/env/process-card-set";
 import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
-import { uploadData } from "aws-amplify/storage";
+import { getTextFromS3 } from "./services/s3Service";
 
 const { resourceConfig, libraryOptions } =
   await getAmplifyDataClientConfig(env);
@@ -20,8 +19,8 @@ const data_client = generateClient<Schema>({ authMode: "iam" });
 
 export const handler = async (event: SQSEvent, context: Context) => {
   const [prompt_story, prompt_ssml] = await Promise.all([
-    getTextFromS3(config.s3.secretBucket, "prompt-story.md"),
-    getTextFromS3(config.s3.secretBucket, "prompt-ssml.md"),
+    getTextFromS3(config.s3.storageBucket!, "prompts/prompt-story.md"),
+    getTextFromS3(config.s3.storageBucket!, "prompts/prompt-ssml.md"),
   ]);
 
   for (const record of event.Records) {
